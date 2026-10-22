@@ -13,7 +13,7 @@ import sys
 
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import (col, count, sum as ssum, avg, round as sround, to_date,
-                                   desc, row_number)
+                                   desc, row_number,expr, when)
 from pyspark.sql.types import (StructType, StructField, StringType, IntegerType, DoubleType,
                                TimestampType)
 from pyspark.sql.window import Window
@@ -70,8 +70,20 @@ def part1_clean(raw):
     DataFrame: rows_total, bad_time, bad_fare, removed, rows_kept.
     A row that breaks both rules counts in both bad_time and bad_fare, but once in removed.
     """
-    # TODO
-    return None, None
+    checked = (raw.withColumn("fare_numeric", expr("try_cast(fare as double)"))
+               .withColumn("bad_time", col("dropoff_ts") <= col("pickup_ts"))
+               .withColumn("bad_fare", col("fare_numeric").isNull()))
+
+    invalid = col("bad_time") | col("bad_fare")
+    counts = checked.agg(count("*").alias("rows_total"),ssum(when(col("bad_time"),1).otherwise(0)).alias("bad_time"),
+                         ssum(when(col("bad_fare"),1).otherwise(0)).alias("bad_fare"),
+                         ssum(when(invalid, 1).otherwise(0)).alias("removed"),
+                         ssum(when(~invalid, 1).otherwise(0)).alias("rows_kept"))
+    clean = checked.filter(~invalid).withColumn("fare", col("fare_numeric")).drop("fare_numeric", "bad_time", "bad_fare").withColumn("day", to_date(col("pickup_ts"))).withColumn(
+        "duration_min",(col("dropoff_ts").cast("long") - col("pickup_ts").cast("long")/60.0)
+    )
+    clean.write.mode("overwrite").parquet(f"{out_dir}/clean_trips")
+    return clean, counts
 
 
 # ---------------------------------------------------------------- Part 2a: zone revenue per day
