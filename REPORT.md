@@ -17,6 +17,8 @@ python3 datagen.py 801371099
 docker compose up -d
 docker cp main.py spark-master:/opt/spark/work-dir/
 docker exec -it spark-master /opt/spark/bin/spark-submit --master spark://spark-master:7077 /opt/spark/work-dir/main.py /opt/spark/work-dir/shared/input /opt/spark/work-dir/shared/output
+docker cp main.py spark-master:/opt/spark/work-dir/
+docker exec -it spark-master /opt/spark/bin/spark-submit --master spark://spark-master:7077 /opt/spark/work-dir/main.py /opt/spark/work-dir/shared/input /opt/spark/work-dir/shared/output
 ```
 
 ---
@@ -52,7 +54,21 @@ T000468,D092,4,9,2026-09-11 08:10:03,2026-09-11 08:31:22,4.95,,card
 First ten rows, and one sentence on what they show:
 
 ```
-
++----------+-------+---------------+-----+-------+
+|day       |zone_id|zone_name      |trips|revenue|
++----------+-------+---------------+-----+-------+
+|2026-09-01|1      |Uptown Center  |293  |5749.66|
+|2026-09-01|2      |First Ward     |228  |4505.68|
+|2026-09-01|3      |Fourth Ward    |188  |3610.21|
+|2026-09-01|4      |South End      |262  |5206.28|
+|2026-09-01|5      |Dilworth       |201  |4032.84|
+|2026-09-01|6      |Plaza Midwood  |134  |2754.68|
+|2026-09-01|7      |NoDa           |193  |3907.03|
+|2026-09-01|8      |University City|220  |4256.82|
+|2026-09-01|9      |Ballantyne     |164  |3384.95|
+|2026-09-01|10     |SouthPark      |167  |3393.51|git
++----------+-------+---------------+-----+-------+
+only showing top 20 rows
 ```
 
 ## Part 2b: each driver's busiest day

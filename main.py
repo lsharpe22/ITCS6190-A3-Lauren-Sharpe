@@ -93,8 +93,18 @@ def part2a_zone_revenue(clean, zones):
     Columns: day, zone_id, zone_name, trips, revenue (sum of fares, 2 decimals).
     One row per (day, zone) with at least one trip. Ordered by day, then zone_id.
     """
-    # TODO
-    return None
+    daily = clean.groupBy("day", "pickup_zone").agg(
+        count("*").alias("trips"),
+        sround(ssum("fare"), 2).alias("revenue")
+    )
+    joined = (
+        daily
+        .join(zones, daily["pickup_zone"] == zones["zone_id"], "inner")
+        .select("day", "zone_id", "zone_name", "trips", "revenue")
+        .orderBy("day", "zone_id")
+    )
+                                
+    return joined
 
 
 # ---------------------------------------------------------------- Part 2b: driver busiest day
