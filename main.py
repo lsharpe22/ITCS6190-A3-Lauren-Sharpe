@@ -115,8 +115,10 @@ def part2b_driver_busiest_day(clean):
     Ties: the earliest day. Hint: count per (driver, day), then row_number over a window
     partitioned by driver and ordered by trips descending, day ascending.
     """
-    # TODO
-    return None
+    daily = clean.groupBy("driver_id", "day").agg(count("*").alias("trips"))
+    window = Window.partitionBy("driver_id").orderBy(col("trips").desc(), col("day").asc())
+    result = daily.withColumn("rank", row_number().over(window)).filter(col("rank") == 1).select("driver_id", "day", "trips").orderBy("driver_id")
+    return result
 
 
 # ---------------------------------------------------------------- Part 3: Spark SQL
@@ -129,8 +131,19 @@ def part3_borough_sql(clean, zones):
     Then call .explain() on this result and on part 2a's result and compare the plans in
     your report.
     """
-    # TODO
-    return None
+    clean.createOrReplaceTempView("trips")
+    zones.createOrReplaceTempView("zones")
+    return spark.sql("""
+        SELECT 
+            z.borough,
+            COUNT(*) AS trips,
+            ROUND(SUM(t.fare), 2) AS revenue,
+            ROUND(AVG(t.distance_km), 2) AS avg_distance_km
+        FROM trips t
+        JOIN zones z ON t.pickup_zone = z.zone_id
+        GROUP BY z.borough
+        ORDER BY revenue DESC
+    """)
 
 
 clean, counts = part1_clean(raw)
